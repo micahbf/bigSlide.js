@@ -1,4 +1,4 @@
-/*! bigSlide - v0.6.1 - 2015-02-12
+/*! bigSlide - v0.7.0 - 2015-03-09
 * http://ascott1.github.io/bigSlide.js/
 * Copyright (c) 2015 Adam D. Scott; Licensed MIT */
 (function($) {
@@ -15,7 +15,8 @@
       'side': 'left',
       'menuWidth': '15.625em',
       'speed': '300',
-      'state': 'closed'
+      'state': 'closed',
+      'easyClose': false
     }, options);
 
     // store the menu's state in the model
@@ -59,8 +60,23 @@
         };
 
         // manually add the settings values
-        positionOffScreen[settings.side] = '-' + settings.menuWidth;
+        var offScreenSign = (settings.side === 'left') ? '-' : '';
+        var onScreenSign  = (settings.side === 'left') ? '' : '-';
+        positionOffScreen['-webkit-transform'] = 'translate(' + offScreenSign + settings.menuWidth + ', 0)';
+        positionOffScreen['-moz-transform'] = 'translate(' + offScreenSign + settings.menuWidth + ', 0)';
+        positionOffScreen['-ms-transform'] = 'translate(' + offScreenSign + settings.menuWidth + ', 0)';
+        positionOffScreen['-o-transform'] = 'translate(' + offScreenSign + settings.menuWidth + ', 0)';
+        positionOffScreen.transform = 'translate(' + offScreenSign + settings.menuWidth + ', 0)';
         positionOffScreen.width = settings.menuWidth;
+        this.positionOffScreen = positionOffScreen;
+
+        // the translations for when push is pushed over
+        this.pushPosition = {};
+        this.pushPosition['-webkit-transform'] = 'translate(' + onScreenSign + settings.menuWidth + ', 0)';
+        this.pushPosition['-moz-transform'] = 'translate(' + onScreenSign + settings.menuWidth + ', 0)';
+        this.pushPosition['-ms-transform'] = 'translate(' + onScreenSign + settings.menuWidth + ', 0)';
+        this.pushPosition['-o-transform'] = 'translate(' + onScreenSign + settings.menuWidth + ', 0)';
+        this.pushPosition.transform = 'translate(' + onScreenSign + settings.menuWidth + ', 0)';
 
         // add the css values to position things offscreen
         if (settings.state === 'closed') {
@@ -68,13 +84,23 @@
           this.$push.css(settings.side, '0');
         }
 
+        // settings for positioning on screen
+        var noTranslation = {
+          '-webkit-transform': 'translate(0, 0)',
+          '-moz-transform': 'translate(0, 0)',
+          '-ms-transform': 'translate(0, 0)',
+          '-o-transform': 'translate(0, 0)',
+          'transform': 'translate(0, 0)'
+        };
+        this.noTranslation = noTranslation;
+
         // css for the sliding animation
         var animateSlide = {
-          '-webkit-transition': settings.side + ' ' + settings.speed + 'ms ease',
-          '-moz-transition': settings.side + ' ' + settings.speed + 'ms ease',
-          '-ms-transition': settings.side + ' ' + settings.speed + 'ms ease',
-          '-o-transition': settings.side + ' ' + settings.speed + 'ms ease',
-          'transition': settings.side + ' ' + settings.speed + 'ms ease'
+          '-webkit-transition': '-webkit-transform ' + settings.speed + 'ms ease',
+          '-moz-transition': '-moz-transform ' + settings.speed + 'ms ease',
+          '-ms-transition': '-ms-transform ' + settings.speed + 'ms ease',
+          '-o-transition': '-o-transform ' + settings.speed + 'ms ease',
+          'transition': 'transform ' + settings.speed + 'ms ease'
         };
 
         // add the animation css
@@ -90,21 +116,30 @@
             view.toggleOpen();
           }
         });
+
+        // this makes my eyes blead, but adding it back in as it's a highly requested feature
+        if (settings.easyClose) {
+          $('body').on('click.bigSlide', function(e) {
+           if (!$(e.target).parents().andSelf().is(menuLink) && controller.getState() === 'open')  {
+             view.toggleClose();
+           }
+          });
+        }
       },
 
       // toggle the menu open
       toggleOpen: function() {
         controller.changeState();
-        this.$menu.css(settings.side, '0');
-        this.$push.css(settings.side, this.width);
+        this.$menu.css(this.noTranslation);
+        this.$push.css(this.pushPosition);
         //menuLink.addClass(settings.activeBtn);
       },
 
       // toggle the menu closed
       toggleClose: function() {
         controller.changeState();
-        this.$menu.css(settings.side, '-' + this.width);
-        this.$push.css(settings.side, '0');
+        this.$menu.css(this.positionOffScreen);
+        this.$push.css(this.noTranslation);
         //menuLink.removeClass(settings.activeBtn);
       }
 
